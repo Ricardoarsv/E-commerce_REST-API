@@ -13,7 +13,6 @@ func NewPostgreSQLStorage(psqlInfo string) (*sql.DB, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
