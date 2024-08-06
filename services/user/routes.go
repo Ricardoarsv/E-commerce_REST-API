@@ -21,8 +21,8 @@ func NewHandler(store types.UserStore) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/login", h.handleLogin).Methods("POST")
-	router.HandleFunc("/register", h.handleRegister).Methods("POST")
+	router.HandleFunc("/users/login", h.handleLogin).Methods("POST")
+	router.HandleFunc("/users/register", h.handleRegister).Methods("POST")
 }
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +52,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	secret := []byte(config.Envs.JWTSecret)
-	token, err := auth.CreateJWT([]byte(secret), u.ID)
+	token, err := auth.CreateJWT([]byte(secret), u.ID, u.Role)
 
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("error getting JWTtoken"))
@@ -85,7 +85,6 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	// todo check if the user exists
 	_, err := h.store.GetUserByEmail(payload.Email)
 	if err == nil {
-		fmt.Print(err)
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("user with email %s already exists", payload.Email))
 		return
 	}
@@ -102,6 +101,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		FirstName: payload.FirstName,
 		LastName:  payload.LastName,
 		Email:     payload.Email,
+		Role:      payload.Role,
 		Password:  hashedPassword,
 	})
 	if err != nil {
@@ -109,6 +109,20 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, map[string]string{"message": "User created"})
+	u, err := h.store.GetUserByEmail(payload.Email)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadGateway, fmt.Errorf("user with email %s not found", payload.Email))
+		return
+	}
+
+	secret := []byte(config.Envs.JWTSecret)
+	token, err := auth.CreateJWT([]byte(secret), u.ID, u.Role)
+
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("error getting JWTtoken"))
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusCreated, map[string]string{"message": "User created", "token": token})
 
 }

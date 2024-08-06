@@ -15,6 +15,7 @@ type Config struct {
 	DBName                 string
 	JWTExpirationInSeconds int64
 	JWTSecret              string
+	USERADMIN              int64
 }
 
 var Envs = initConfig()
@@ -29,6 +30,7 @@ func initConfig() Config {
 		DBName:                 getEnv("DB_NAME", "postgres"),
 		JWTExpirationInSeconds: getEnvAtInt("JWTExpirationInSeconds", 3600*24*7),
 		JWTSecret:              getEnv("JWTSecret", "secreto"),
+		USERADMIN:              getEnvAtInt("USER_ADMIN", 1),
 	}
 }
 
@@ -43,9 +45,8 @@ func getEnvAtInt(key string, fallback int64) int64 {
 	if value, ok := os.LookupEnv(key); ok {
 		i, err := strconv.ParseInt(value, 10, 64)
 		if err == nil {
-			return fallback
+			return i
 		}
-		return i
 	}
 	return fallback
 }

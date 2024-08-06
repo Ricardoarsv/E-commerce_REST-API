@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Ricardoarsv/E-commerce_REST-API/services/products"
 	"github.com/Ricardoarsv/E-commerce_REST-API/services/user"
 	"github.com/gorilla/mux"
 )
@@ -28,6 +29,10 @@ func (api *APIserver) Run() error {
 	userStore := user.NewStore(api.db)
 	userHandler := user.NewHandler(userStore)
 	userHandler.RegisterRoutes(subrouter)
+
+	productsStore := products.NewStore(api.db)
+	productsHandler := products.NewHandler(productsStore)
+	productsHandler.RegisterRoutes(subrouter)
 
 	log.Println("Server is running on 🚀", api.listenaddress, "(ApiServer)")
 
