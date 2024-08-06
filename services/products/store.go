@@ -3,6 +3,7 @@ package products
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/Ricardoarsv/E-commerce_REST-API/types"
 )
@@ -57,22 +58,66 @@ func (s *Store) ValidateExistingProduct(product *types.Products) error {
 	return nil
 }
 
+func (s *Store) GetProductsByIds(productIDs []int) ([]types.Products, error) {
+	placeholders := make([]string, len(productIDs))
+	for i := range productIDs {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+	}
+	query := fmt.Sprintf("SELECT * FROM products WHERE id IN (%s)", strings.Join(placeholders, ","))
+
+	args := make([]interface{}, len(productIDs))
+	for i, v := range productIDs {
+		args[i] = v
+	}
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	products := []types.Products{}
+	for rows.Next() {
+		p, err := scanRowsIntoProduct(rows)
+		if err != nil {
+			return nil, err
+		}
+		products = append(products, *p)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}
+
+func (s *Store) UpdateProductStock(product types.Products) error {
+	_, err := s.db.Exec("UPDATE products SET quantity = $1 WHERE id = $2", product.Quantity, product.ID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func scanRowsIntoProduct(rows *sql.Rows) (*types.Products, error) {
-	products := new(types.Products)
+	product := new(types.Products)
 
 	err := rows.Scan(
-		&products.ID,
-		&products.Name,
-		&products.Description,
-		&products.Image,
-		&products.Price,
-		&products.Quantity,
-		&products.CreatedAt,
+		&product.ID,
+		&product.Name,
+		&product.Description,
+		&product.Image,
+		&product.Quantity,
+		&product.Price,
+		&product.CreatedAt,
 	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return products, nil
+	return product, nil
 }

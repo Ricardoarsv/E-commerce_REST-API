@@ -3,5 +3,6 @@ CREATE TABLE IF NOT EXISTS order_items (
     orderID INT NOT NULL,
     productID INT NOT NULL,
     quantity INT NOT NULL,
+    price FLOAT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
